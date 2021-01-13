@@ -22,6 +22,18 @@ const sort = (arr: number[]) => {
     i = i + 1;
   }
 };
+interface IPropsBar {
+  value: number;
+  idx: number;
+}
+function Bar(props: IPropsBar) {
+  const { value, idx } = props;
+  const style = {
+    height: value * 10,
+    transform: `translateX(${idx * 21}px)`,
+  };
+  return <div style={style} className={styles.bar} />;
+}
 
 export default () => {
   const [arr, setArr] = useState(getArr());
@@ -38,13 +50,9 @@ export default () => {
   return (
     <>
       <div className={styles.board}>
-        {arr.map((value, i) => {
-          const style = {
-            height: value * 10,
-            transform: `translateX(${i * 21}px)`,
-          };
-          return <div style={style} className={styles.bar}></div>;
-        })}
+        {arr.map((value, i) => (
+          <Bar key={i} value={value} idx={i}></Bar>
+        ))}
       </div>
 
       <div className={styles.buttonBox}>
