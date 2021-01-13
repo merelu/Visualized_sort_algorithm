@@ -45,6 +45,7 @@
   height: 200px;
   background-color: green;
   color: white;
+  transform: rotateX(180deg);
 }
 
 .buttonBox {
@@ -52,4 +53,10 @@
   height: 40px;
   background-color: gray;
   text-align: right;
+}
+
+.bar {
+  position: absolute;
+  width: 20px;
+  background-color: #000;
 }

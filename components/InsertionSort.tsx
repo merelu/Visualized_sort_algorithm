@@ -1,9 +1,9 @@
 import styles from "../styles/Home.module.css";
 import { range, shuffle } from "lodash";
 import { useState } from "react";
-
+const SIZE = 30;
 const getArr = () => {
-  return shuffle(range(1, 11));
+  return shuffle(range(1, SIZE + 1));
 };
 const swap = (arr: number[], a: number, b: number) => {
   const tmp = arr[a];
@@ -34,9 +34,18 @@ export default () => {
     sort(sortedArr);
     setArr(sortedArr);
   };
+
   return (
     <>
-      <div className={styles.board}>{arr.join(",")}</div>
+      <div className={styles.board}>
+        {arr.map((value, i) => {
+          const style = {
+            height: value * 10,
+            transform: `translateX(${i * 21}px)`,
+          };
+          return <div style={style} className={styles.bar}></div>;
+        })}
+      </div>
 
       <div className={styles.buttonBox}>
         <button onClick={handleShuffle}>shuffle</button>
