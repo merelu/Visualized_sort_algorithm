@@ -1,6 +1,6 @@
 import styles from "../styles/Home.module.css";
 import { range, shuffle } from "lodash";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction, useState, memo } from "react";
 const SIZE = 10;
 const DURATION = 40;
 const BAR_WIDTH = 20;
@@ -58,8 +58,28 @@ function Bar(props: IPropsBar) {
   };
   return <div style={style} className={styles.bar} />;
 }
+interface IPropsBoard {
+  arr: number[];
+}
+const areArrEqual = (oldProps: IPropsBoard, props: IPropsBoard) => {
+  return oldProps.arr === props.arr;
+};
+function Board(props: IPropsBoard) {
+  const { arr } = props;
+  return (
+    <div className={styles.board}>
+      {arr.map((value, i) => {
+        console.log("render Bar");
+        return <Bar key={i} value={value} idx={i}></Bar>;
+      })}
+    </div>
+  );
+}
+
+const MemorizedBoard = memo(Board, areArrEqual);
 
 export default () => {
+  const [onOff, setOnOff] = useState("on");
   const [arr, setArr] = useState(getArr());
   const [idxI, setIdxI] = useState(1);
   const [idxJ, setIdxJ] = useState(1);
@@ -75,14 +95,10 @@ export default () => {
     setIsRunning(false);
   };
 
+  const handleOnOff = () => setOnOff(onOff === "on" ? "off" : "on");
   return (
     <>
-      <div className={styles.board}>
-        {arr.map((value, i) => (
-          <Bar key={i} value={value} idx={i}></Bar>
-        ))}
-      </div>
-
+      <MemorizedBoard arr={arr} />
       <div className={styles.buttonBox}>
         <div
           style={{
@@ -104,6 +120,7 @@ export default () => {
         >
           j
         </div>
+        {<button onClick={handleOnOff}>{onOff}</button>}
         {!isRunning && <button onClick={handleShuffle}>shuffle</button>}
         {!isRunning && <button onClick={handleSort}>sort</button>}
         {isRunning && <div className={styles.running}>Running...</div>}
