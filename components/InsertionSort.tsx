@@ -1,5 +1,5 @@
 import styles from "../styles/Home.module.css";
-import { range, shuffle } from "lodash";
+import { range, shuffle, uniqueId } from "lodash";
 import {
   Dispatch,
   SetStateAction,
@@ -11,7 +11,7 @@ import {
 } from "react";
 import { tween } from "tweening-js";
 
-const SIZE = 30;
+const SIZE = 5;
 const DURATION = 100;
 const BAR_WIDTH = 20;
 const BAR_MARGIN = 2;
@@ -63,7 +63,7 @@ const sort = async (
       ]);
       swap(extendedBarArr, j, j - 1);
 
-      await tween(j - 1, j, setIdxJ, DURATION).promise;
+      await tween(j, j - 1, setIdxJ, DURATION).promise;
       j = j - 1;
     }
     await tween(i, i + 1, setIdxI, DURATION).promise;
@@ -89,7 +89,7 @@ interface IPropsBoard {
   arr: number[];
   refExtendedBarArr: MutableRefObject<IExtendedBar[]>;
 }
-const areArrEqual = (oldProps: IPropsBoard, props: IPropsBoard) => {
+const isArrEqual = (oldProps: IPropsBoard, props: IPropsBoard) => {
   return oldProps.arr === props.arr;
 };
 function Board(props: IPropsBoard) {
@@ -104,16 +104,20 @@ function Board(props: IPropsBoard) {
   return (
     <div className={styles.board}>
       {extendedBarArr.map((item, i) => {
-        console.log("render Bar");
         return (
-          <Bar key={i} value={item.value} idx={i} refSetX={item.refSetX}></Bar>
+          <Bar
+            key={`${uniqueId("set")}`}
+            value={item.value}
+            idx={i}
+            refSetX={item.refSetX}
+          ></Bar>
         );
       })}
     </div>
   );
 }
 
-const MemorizedBoard = memo(Board, areArrEqual);
+const MemorizedBoard = memo(Board, isArrEqual);
 
 export default () => {
   const [onOff, setOnOff] = useState("on");
