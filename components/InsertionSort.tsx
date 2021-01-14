@@ -9,8 +9,10 @@ import {
   useRef,
   useEffect,
 } from "react";
+import { tween } from "tweening-js";
+
 const SIZE = 30;
-const DURATION = 40;
+const DURATION = 100;
 const BAR_WIDTH = 20;
 const BAR_MARGIN = 2;
 type TSet = Dispatch<SetStateAction<any>>;
@@ -28,12 +30,6 @@ const swap = (arr: IExtendedBar[], a: number, b: number) => {
   arr[b] = tmp;
 };
 
-const delaySet = (value: number, set: TSet) =>
-  new Promise((resolve) => {
-    set(value);
-    setTimeout(resolve, DURATION);
-  });
-
 interface IExtendedBar {
   value: number;
   refSetX: MutableRefObject<TSet>;
@@ -41,27 +37,37 @@ interface IExtendedBar {
 
 const sort = async (
   extendedBarArr: IExtendedBar[],
-  setArr: TSet,
   setIdxI: TSet,
   setIdxJ: TSet
 ) => {
   //https://en.wikipedia.org/wiki/Insertion_sort
-  let i = 1;
+  let i = 1,
+    j = 1;
   while (i < extendedBarArr.length) {
-    let j = i;
-    await delaySet(j, setIdxJ);
+    await tween(j, i, setIdxJ, DURATION).promise();
+    j = i;
     while (j > 0 && extendedBarArr[j - 1].value > extendedBarArr[j].value) {
       await Promise.all([
-        delaySet(getX(j - 1), extendedBarArr[j].refSetX.current),
-        delaySet(getX(j), extendedBarArr[j - 1].refSetX.current),
+        tween(
+          getX(j),
+          getX(j - 1),
+          extendedBarArr[j].refSetX.current,
+          DURATION
+        ).promise(),
+        tween(
+          getX(j - 1),
+          getX(j),
+          extendedBarArr[j - 1].refSetX.current,
+          DURATION
+        ).promise(),
       ]);
       swap(extendedBarArr, j, j - 1);
 
+      await tween(j - 1, j, setIdxJ, DURATION).promise;
       j = j - 1;
-      await delaySet(j, setIdxJ);
     }
+    await tween(i, i + 1, setIdxI, DURATION).promise;
     i = i + 1;
-    await delaySet(i, setIdxI);
   }
 };
 interface IPropsBar {
@@ -124,7 +130,7 @@ export default () => {
   };
   const handleSort = async () => {
     setIsRunning(true);
-    await sort(refExtendedBarArr.current, setArr, setIdxI, setIdxJ);
+    await sort(refExtendedBarArr.current, setIdxI, setIdxJ);
     setIsRunning(false);
   };
 
