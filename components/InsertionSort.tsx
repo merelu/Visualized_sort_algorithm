@@ -1,25 +1,49 @@
 import styles from "../styles/Home.module.css";
 import { range, shuffle } from "lodash";
-import { useState } from "react";
-const SIZE = 30;
+import { Dispatch, SetStateAction, useState } from "react";
+const SIZE = 10;
+const DURATION = 40;
+const BAR_WIDTH = 20;
+const BAR_MARGIN = 2;
+type TSet = Dispatch<SetStateAction<any>>;
+
 const getArr = () => {
   return shuffle(range(1, SIZE + 1));
 };
+
+const getX = (idx: number) => idx * (BAR_WIDTH + BAR_MARGIN);
+
 const swap = (arr: number[], a: number, b: number) => {
   const tmp = arr[a];
   arr[a] = arr[b];
   arr[b] = tmp;
 };
-const sort = (arr: number[]) => {
+
+const delaySet = (value: any, setValue: TSet) =>
+  new Promise((resolve) => {
+    setValue(value);
+    setTimeout(resolve, DURATION);
+  });
+
+const sort = async (
+  arr: number[],
+  setArr: TSet,
+  setIdxI: TSet,
+  setIdxJ: TSet
+) => {
   //https://en.wikipedia.org/wiki/Insertion_sort
   let i = 1;
   while (i < arr.length) {
     let j = i;
+    delaySet(j, setIdxJ);
     while (j > 0 && arr[j - 1] > arr[j]) {
       swap(arr, j, j - 1);
+      await delaySet([...arr], setArr);
       j = j - 1;
+      await delaySet(j, setIdxJ);
     }
     i = i + 1;
+    await delaySet(i, setIdxI);
   }
 };
 interface IPropsBar {
@@ -30,21 +54,25 @@ function Bar(props: IPropsBar) {
   const { value, idx } = props;
   const style = {
     height: value * 10,
-    transform: `translateX(${idx * 21}px)`,
+    transform: `translateX(${getX(idx)}px)`,
   };
   return <div style={style} className={styles.bar} />;
 }
 
 export default () => {
   const [arr, setArr] = useState(getArr());
-
+  const [idxI, setIdxI] = useState(1);
+  const [idxJ, setIdxJ] = useState(1);
+  const [isRunning, setIsRunning] = useState(false);
   const handleShuffle = () => {
+    setIdxI(1);
+    setIdxJ(1);
     setArr(getArr());
   };
-  const handleSort = () => {
-    const sortedArr = [...arr];
-    sort(sortedArr);
-    setArr(sortedArr);
+  const handleSort = async () => {
+    setIsRunning(true);
+    await sort(arr, setArr, setIdxI, setIdxJ);
+    setIsRunning(false);
   };
 
   return (
@@ -56,8 +84,29 @@ export default () => {
       </div>
 
       <div className={styles.buttonBox}>
-        <button onClick={handleShuffle}>shuffle</button>
-        <button onClick={handleSort}>sort</button>
+        <div
+          style={{
+            transform: `translateX(${getX(idxI)}px)`,
+            backgroundColor: "blue",
+            color: "white",
+          }}
+          className={styles.index}
+        >
+          i
+        </div>
+        <div
+          style={{
+            transform: `translateX(${getX(idxJ)}px)`,
+            backgroundColor: "yellow",
+            color: "black",
+          }}
+          className={styles.index}
+        >
+          j
+        </div>
+        {!isRunning && <button onClick={handleShuffle}>shuffle</button>}
+        {!isRunning && <button onClick={handleSort}>sort</button>}
+        {isRunning && <div className={styles.running}>Running...</div>}
       </div>
     </>
   );
