@@ -10,8 +10,9 @@ import {
   useEffect,
 } from "react";
 import { tween } from "tweening-js";
+import browserBeep from "browser-beep";
 
-const SIZE = 5;
+const SIZE = 30;
 const DURATION = 100;
 const BAR_WIDTH = 20;
 const BAR_MARGIN = 2;
@@ -40,6 +41,8 @@ const sort = async (
   setIdxI: TSet,
   setIdxJ: TSet
 ) => {
+  const beepA = browserBeep({ frequency: 830 });
+  const beepB = browserBeep({ frequency: 230 });
   //https://en.wikipedia.org/wiki/Insertion_sort
   let i = 1,
     j = 1;
@@ -47,6 +50,7 @@ const sort = async (
     await tween(j, i, setIdxJ, DURATION).promise();
     j = i;
     while (j > 0 && extendedBarArr[j - 1].value > extendedBarArr[j].value) {
+      beepA(1);
       await Promise.all([
         tween(
           getX(j),
@@ -66,6 +70,7 @@ const sort = async (
       await tween(j, j - 1, setIdxJ, DURATION).promise;
       j = j - 1;
     }
+    beepB(1);
     await tween(i, i + 1, setIdxI, DURATION).promise;
     i = i + 1;
   }
@@ -146,7 +151,7 @@ export default () => {
         <div
           style={{
             transform: `translateX(${getX(idxI)}px)`,
-            backgroundColor: "blue",
+            backgroundColor: "yellow",
             color: "white",
           }}
           className={styles.index}
@@ -156,7 +161,7 @@ export default () => {
         <div
           style={{
             transform: `translateX(${getX(idxJ)}px)`,
-            backgroundColor: "yellow",
+            backgroundColor: "blue",
             color: "black",
           }}
           className={styles.index}
