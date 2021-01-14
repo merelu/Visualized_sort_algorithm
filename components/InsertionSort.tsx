@@ -1,7 +1,15 @@
 import styles from "../styles/Home.module.css";
 import { range, shuffle } from "lodash";
-import { Dispatch, SetStateAction, useState, memo } from "react";
-const SIZE = 10;
+import {
+  Dispatch,
+  SetStateAction,
+  useState,
+  memo,
+  MutableRefObject,
+  useRef,
+  useEffect,
+} from "react";
+const SIZE = 30;
 const DURATION = 40;
 const BAR_WIDTH = 20;
 const BAR_MARGIN = 2;
@@ -10,35 +18,45 @@ type TSet = Dispatch<SetStateAction<any>>;
 const getArr = () => {
   return shuffle(range(1, SIZE + 1));
 };
+const initArr = range(1, SIZE + 1).map(() => 1);
 
 const getX = (idx: number) => idx * (BAR_WIDTH + BAR_MARGIN);
 
-const swap = (arr: number[], a: number, b: number) => {
+const swap = (arr: IExtendedBar[], a: number, b: number) => {
   const tmp = arr[a];
   arr[a] = arr[b];
   arr[b] = tmp;
 };
 
-const delaySet = (value: any, setValue: TSet) =>
+const delaySet = (value: number, set: TSet) =>
   new Promise((resolve) => {
-    setValue(value);
+    set(value);
     setTimeout(resolve, DURATION);
   });
 
+interface IExtendedBar {
+  value: number;
+  refSetX: MutableRefObject<TSet>;
+}
+
 const sort = async (
-  arr: number[],
+  extendedBarArr: IExtendedBar[],
   setArr: TSet,
   setIdxI: TSet,
   setIdxJ: TSet
 ) => {
   //https://en.wikipedia.org/wiki/Insertion_sort
   let i = 1;
-  while (i < arr.length) {
+  while (i < extendedBarArr.length) {
     let j = i;
-    delaySet(j, setIdxJ);
-    while (j > 0 && arr[j - 1] > arr[j]) {
-      swap(arr, j, j - 1);
-      await delaySet([...arr], setArr);
+    await delaySet(j, setIdxJ);
+    while (j > 0 && extendedBarArr[j - 1].value > extendedBarArr[j].value) {
+      await Promise.all([
+        delaySet(getX(j - 1), extendedBarArr[j].refSetX.current),
+        delaySet(getX(j), extendedBarArr[j - 1].refSetX.current),
+      ]);
+      swap(extendedBarArr, j, j - 1);
+
       j = j - 1;
       await delaySet(j, setIdxJ);
     }
@@ -49,28 +67,41 @@ const sort = async (
 interface IPropsBar {
   value: number;
   idx: number;
+  refSetX: MutableRefObject<TSet>;
 }
 function Bar(props: IPropsBar) {
-  const { value, idx } = props;
+  const { value, idx, refSetX } = props;
+  const [x, setX] = useState(getX(idx));
   const style = {
     height: value * 10,
-    transform: `translateX(${getX(idx)}px)`,
+    transform: `translateX(${x}px)`,
   };
+  refSetX.current = setX;
   return <div style={style} className={styles.bar} />;
 }
 interface IPropsBoard {
   arr: number[];
+  refExtendedBarArr: MutableRefObject<IExtendedBar[]>;
 }
 const areArrEqual = (oldProps: IPropsBoard, props: IPropsBoard) => {
   return oldProps.arr === props.arr;
 };
 function Board(props: IPropsBoard) {
-  const { arr } = props;
+  const { arr, refExtendedBarArr } = props;
+  const extendedBarArr = arr.map((value) => ({
+    value,
+    refSetX: useRef<TSet>(null),
+  }));
+  useEffect(() => {
+    refExtendedBarArr.current = extendedBarArr;
+  }, [arr]);
   return (
     <div className={styles.board}>
-      {arr.map((value, i) => {
+      {extendedBarArr.map((item, i) => {
         console.log("render Bar");
-        return <Bar key={i} value={value} idx={i}></Bar>;
+        return (
+          <Bar key={i} value={item.value} idx={i} refSetX={item.refSetX}></Bar>
+        );
       })}
     </div>
   );
@@ -80,10 +111,12 @@ const MemorizedBoard = memo(Board, areArrEqual);
 
 export default () => {
   const [onOff, setOnOff] = useState("on");
-  const [arr, setArr] = useState(getArr());
+  const [arr, setArr] = useState(initArr);
   const [idxI, setIdxI] = useState(1);
   const [idxJ, setIdxJ] = useState(1);
   const [isRunning, setIsRunning] = useState(false);
+  const refExtendedBarArr = useRef<IExtendedBar[]>([]);
+  useEffect(() => setArr(getArr()), []);
   const handleShuffle = () => {
     setIdxI(1);
     setIdxJ(1);
@@ -91,14 +124,14 @@ export default () => {
   };
   const handleSort = async () => {
     setIsRunning(true);
-    await sort(arr, setArr, setIdxI, setIdxJ);
+    await sort(refExtendedBarArr.current, setArr, setIdxI, setIdxJ);
     setIsRunning(false);
   };
 
   const handleOnOff = () => setOnOff(onOff === "on" ? "off" : "on");
   return (
     <>
-      <MemorizedBoard arr={arr} />
+      <MemorizedBoard arr={arr} refExtendedBarArr={refExtendedBarArr} />
       <div className={styles.buttonBox}>
         <div
           style={{
